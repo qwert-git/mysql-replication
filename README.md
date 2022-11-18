@@ -1,25 +1,35 @@
-### 1. To run databases use command:
+# MySQL Master-Slave replication
+Replication is one of the database scaling techniques.
+It implements frequent copying of data from a database in one computer or server to a database in another.
+
+In this approach we choose one primary database server and call it Master. All data changes occur on it. 
+The Slave server constantly copies all changes from the Master.
+All data read requests are sent from the application to the Slave server. Thus, Master server is responsible for changing data, and Slave for reading.
+
+### To run infrustucture use command:
 ``` docker compose up -d ```
 
 To access databases use credentials: ``` username: root, password: password ```
+It possible to change password for root user in the ```.env``` file.
 
-### 2. Setup master config with
+# How to setup replication?
+
+### 1. Setup master config
 ```
 server_id = 99 # server ID, random int
 log_bin = /var/lib/mysql/my-bin.log # path to binlog
 binlog_do_db = ReplicationDb # database name
 ```
-It's possible to change settings in the mysq/master.cnf file.
+In our case we set the settings in the ```mysq/master.cnf``` file. To change them - update the file.
 
-
-### 3. Created a user with replication permissions on master
+### 2. Create a user with replication permissions on master
 ```
 CREATE USER 'slave'@'%' IDENTIFIED BY 'password';
 GRANT REPLICATION SLAVE ON *.* TO 'slave'@'%';
 FLUSH PRIVILEGES;
 ```
 
-### 4. Create a table to replicate
+### 3. Create a table to replicate and fill it with data
 ```
 CREATE TABLE MainData 
 (
@@ -28,10 +38,7 @@ CREATE TABLE MainData
     Col2 nvarchar(100),
     Col3 nvarchar(100)
 );
-```
 
-Initialize with the test data
-```
 INSERT INTO MainData (Col1, Col2, Col3)
 VALUE
 	("Random Text", "1", "Column3"),
@@ -39,33 +46,39 @@ VALUE
     ("Another Text", "3", "Column3");
 ```
 
-### 5. Set the lock for the whole database
+### 4. Make a dump from the master database
+Set the lock for the whole database
 ```
 use ReplicationDb;
 FLUSH TABLES WITH READ LOCK;
 ```
 
-### 6. Check master status
+Create a dump
+```
+mysqldump -u root -p ReplicationDb > replicadb-dump.sql
+```
+
+Unlock all tables
+```
+UNLOCK TABLES;
+```
+
+### 5. Check master status
+Run the command
 ```
 SHOW MASTER STATUS;
 ```
 Output
 ```
-	File	Position	Binlog_Do_DB	Binlog_Ignore_DB	Executed_Gtid_Set
-	my-bin.000003	155	ReplicationDb
++------------------+----------+-------------------+------------------+
+| File             | Position | Binlog_Do_DB      | Binlog_Ignore_DB |
++------------------+----------+-------------------+------------------+
+| mysql-bin.000003 |      155 | ReplicationDb     |                  |
++------------------+----------+-------------------+------------------+
 ```
 
-### 7. Create a dump
-```
-mysqldump -u root -p ReplicationDb > replicadb-dump.sql
-```
-
-### 8. Unlock all tables
-```
-UNLOCK TABLES;
-```
-
-### 9. Copy dump file to slave containers
+### 6. Upload dump to the slaves
+Copy the dump file to slave containers
 ```
 docker cp master:/etc/mysql/dumps/replicadb-dump.sql ./mysql/dump.sql
 
@@ -73,30 +86,32 @@ docker cp ./mysql/dump.sql slave-1:/etc/mysql/replicadb-dump.sql
 docker cp ./mysql/dump.sql slave-2:/etc/mysql/replicadb-dump.sql
 ```
 
-### 10. Load data from the dump to slaves db (on a slave containers)
+Load data from the dump to slaves db (on a slave containers)
 ```
 cd /etc/mysql/
 mysql -u root -p ReplicationDb < replicadb-dump.sql
 ```
 
-### 11. Set and upload config for slave databases
+### 7. Set config for slave databases
 ```
 server_id = 98 # server ID, random int
 relay-log = /var/log/mysql/my-relay-bin.log
 log_bin = /var/lib/mysql/my-bin.log # binlog path on M
 binlog_do_db = ReplicationDb # database name
 ```
-To change configuration use musq/slaveX.cnf file
+In our case we add settings to the ```musq/slaveX.cnf``` file. 
+To update the settings - change the file.
 
-### 12. Set replica params to slave
+### 8. Start the Slave
 ```
 CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1;
 
-	CHANGE MASTER TO MASTER_HOST='master', MASTER_LOG_FILE = 'my-bin.000003', MASTER_LOG_POS = 155;
-	START SLAVE USER='slave' PASSWORD='password';
+CHANGE MASTER TO MASTER_HOST='master', MASTER_LOG_FILE = 'my-bin.000003', MASTER_LOG_POS = 155;
+START SLAVE USER='slave' PASSWORD='password';
 ```
+Setting MASTER_PUBLIC_KEY to 1 could not sute for the production, but it was required to make possible to connect slave to master.
 
-### 13. Check replica status
+### 9. Check replica status
 ```
 SHOW SLAVE STATUS;
 ```

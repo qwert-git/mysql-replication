@@ -3,7 +3,6 @@ services:
   master:
     image: mysql:8.0.19
     command: --default-authentication-plugin=mysql_native_password
-    # command: bash -c "chmod 644 /etc/mysql/conf.d/*.cnf && /entrypoint.sh mysqld"
     container_name: master
     ports:
       - 3306:3306
