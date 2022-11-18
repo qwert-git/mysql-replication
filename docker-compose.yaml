@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  master:
+    image: mysql:8.0.19
+    command: --default-authentication-plugin=mysql_native_password
+    # command: bash -c "chmod 644 /etc/mysql/conf.d/*.cnf && /entrypoint.sh mysqld"
+    container_name: master
+    ports:
+      - 3306:3306
+    networks:
+      - replica
+    volumes:
+      - master_db:/var/lib/mysql
+      - ./mysql/master.cnf:/etc/mysql/conf.d/mysql.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ReplicationDb
+    restart: unless-stopped
+
+  slave1:
+    image: mysql:8.0.19
+    container_name: slave-1
+    ports:
+      - 3307:3306
+    networks:
+      - replica
+    command: bash -c "chmod 644 /etc/mysql/conf.d/*.cnf && /entrypoint.sh mysqld"
+    volumes:
+      - slave1_db:/var/lib/mysql
+      - ./mysql/slave1.cnf:/etc/mysql/conf.d/mysql.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ReplicationDb
+    restart: unless-stopped
+
+  slave2:
+    image: mysql:8.0.19
+    container_name: slave-2
+    ports:
+      - 3308:3306
+    networks:
+      - replica
+    command: bash -c "chmod 644 /etc/mysql/conf.d/*.cnf && /entrypoint.sh mysqld"
+    volumes:
+      - slave2_db:/var/lib/mysql
+      - ./mysql/slave2.cnf:/etc/mysql/conf.d/mysql.cnf
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ReplicationDb
+    restart: unless-stopped
+
+volumes:
+  master_db: {}
+  slave1_db: {}
+  slave2_db: {}
+
+networks:
+  replica:
+    driver: bridge

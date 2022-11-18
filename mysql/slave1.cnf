@@ -1,0 +1,12 @@
+#
+# The MySQL  Server configuration file.
+#
+# For explanations see
+# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
+
+[mysqld]
+
+server_id = 91 # server ID, random int
+relay-log = /var/lib/mysql/mysql-relay-bin.log
+log_bin = /var/lib/mysql/my-bin.log # binlog path on M
+binlog_do_db = ReplicationDb # database name

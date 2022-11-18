@@ -1,0 +1,16 @@
+#
+# The MySQL  Server configuration file.
+#
+# For explanations see
+# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
+
+[mysqld]
+default_authentication_plugin=mysql_native_password
+pid-file        = /var/run/mysqld/mysqld.pid
+socket          = /var/run/mysqld/mysqld.sock
+datadir         = /var/lib/mysql
+secure-file-priv= NULL
+
+server_id = 90 # server ID, random int
+log_bin = /var/lib/mysql/my-bin.log # path to binlog
+binlog_do_db = ReplicationDb # database name
