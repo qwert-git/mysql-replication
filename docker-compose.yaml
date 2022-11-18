@@ -12,8 +12,8 @@ services:
       - master_db:/var/lib/mysql
       - ./mysql/master.cnf:/etc/mysql/conf.d/mysql.cnf
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: ReplicationDb
+      MYSQL_ROOT_PASSWORD: ${MASTER_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
     restart: unless-stopped
 
   slave1:
@@ -28,8 +28,8 @@ services:
       - slave1_db:/var/lib/mysql
       - ./mysql/slave1.cnf:/etc/mysql/conf.d/mysql.cnf
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: ReplicationDb
+      MYSQL_ROOT_PASSWORD: ${MASTER_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
     restart: unless-stopped
 
   slave2:
@@ -44,8 +44,8 @@ services:
       - slave2_db:/var/lib/mysql
       - ./mysql/slave2.cnf:/etc/mysql/conf.d/mysql.cnf
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: ReplicationDb
+      MYSQL_ROOT_PASSWORD: ${MASTER_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
     restart: unless-stopped
 
 volumes:
